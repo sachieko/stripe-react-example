@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   PaymentElement,
   useStripe,
   useElements
 } from "@stripe/react-stripe-js";
 
-const PaymentForm = function() {
+export default function CheckoutForm() {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -43,11 +43,12 @@ const PaymentForm = function() {
     });
   }, [stripe]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     if (!stripe || !elements) {
-      // Stripe.js has not yet loaded, disable for submission until it has loaded
+      // Stripe.js has not yet loaded.
+      // Make sure to disable form submission until Stripe.js has loaded.
       return;
     }
 
@@ -56,31 +57,35 @@ const PaymentForm = function() {
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        // Should be payment completion page get
+        // Make sure to change this to your payment completion page
         return_url: "http://localhost:3000",
-      }
+      },
     });
 
-    // This will only be reached if there is an error, otherwise the promise above will send them to the above URL.
-    if (error.type === 'card_error' || error.type === 'validation_error') {
+    // This point will only be reached if there is an immediate error when
+    // confirming the payment. Otherwise, your customer will be redirected to
+    // your `return_url`. For some payment methods like iDEAL, your customer will
+    // be redirected to an intermediate site first to authorize the payment, then
+    // redirected to the `return_url`.
+    if (error.type === "card_error" || error.type === "validation_error") {
       setMessage(error.message);
+    } else {
+      setMessage("An unexpected error occurred.");
     }
-    setMessage('An unexpected error occurred. Great..');
 
     setIsLoading(false);
   };
 
   return (
-    <>
-    <form id='payment-form' onSubmit={handleSubmit}>
-     <PaymentElement id='payment-element' />
-     <button disabled={isLoading || !stripe || !elements} id='submit'>
-      <span>{isLoading ? 'Processing. . .' : 'Pay Now'}</span> 
-     </button>
-     {message && <span id='payment-message'>{message}</span>}
+    <form id="payment-form" onSubmit={handleSubmit}>
+      <PaymentElement id="payment-element" />
+      <button disabled={isLoading || !stripe || !elements} id="submit">
+        <span id="button-text">
+          {isLoading ? <div className="spinner" id="spinner"></div> : "Pay now"}
+        </span>
+      </button>
+      {/* Show any error or success messages */}
+      {message && <div id="payment-message">{message}</div>}
     </form>
-    </>
   );
-};
-
-export default PaymentForm;
+}

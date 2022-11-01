@@ -1,44 +1,37 @@
-require('dotenv').config();
-const express = require('express');
-const stripe = require('stripe')(process.env.STRIPE_SECRET);
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const PORT = process.env.PORT || 4000;
-
+const express = require("express");
+const dotenv = require('dotenv').config();
 const app = express();
+// This is your test secret API key.
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+const PORT = process.env.PORT;
+const cors = require('cors');
 
-// Middleware
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(bodyParser.json());
-
+app.use(express.static("public"));
+app.use(express.json());
 app.use(cors());
 
-app.post('/payment', cors(), async (req, res) => {
-  const { amount, id } = req.body;
+const calculateOrderAmount = (items) => {
+  // Replace this constant with a calculation of the order's amount
+  // Calculate the order total on the server to prevent
+  // people from directly manipulating the amount on the client
+  return 1400;
+};
 
-  try {
-    const payment = await stripe.paymentIntents.create({
-      amount,
-      currency: 'CAD',
-      description: 'Payment for development',
-      payment_method: id,
-      confirm: true
-    });
+app.post("/create-payment-intent", async (req, res) => {
+  const { items } = req.body;
+  console.log('POST CAME IN');
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: calculateOrderAmount(items),
+    currency: "cad",
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
 
-    console.log('Payment: ', payment);
-    res.json({
-      message: 'Payment was successful',
-      success: true
-    });
-  } catch (error) {
-    console.log('Error: ', error);
-    res.json({
-      message: 'Payment failed',
-      success: false
-    });
-  }
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Node server listening on port ${PORT}!`));
