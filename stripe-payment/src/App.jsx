@@ -1,26 +1,56 @@
-import React, { useEffect } from "react";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-
-import CheckoutForm from "./Components/CheckoutForm";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
-// Make sure to call loadStripe outside of a component’s render to avoid
-// recreating the Stripe object on every render.
-// This is your test publishable API key.
-const stripePromise = {};
+const ProductDisplay = () => (
+  <section>
+    <div className="product">
+      <img
+        src="https://i.imgur.com/EHyR2nP.png"
+        alt="The cover of Stubborn Attachments"
+      />
+      <div className="description">
+      <h3>Stubborn Attachments</h3>
+      <h5>$19.50</h5>
+      </div>
+    </div>
+    <form action="/create-checkout-session" method="POST">
+      <button type="submit">
+        Checkout
+      </button>
+    </form>
+  </section>
+);
+
+const Message = ({ message }) => (
+  <section>
+    <p>{message}</p>
+  </section>
+);
 
 export default function App() {
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    stripePromise = loadStripe("pk_test_51LktkjCljtP53Tab3fCX6fbLY8Rx81LjlBAdOKWpJQKsXwBLR1lulzEMNM2WYa3dSABXbbGQVt4S0yp3SSLQPSoI00cdhPGO1t");
+    // Check to see if this is a redirect back from Checkout
+    const query = new URLSearchParams(window.location.search);
+
+    if (query.get("success")) {
+      setMessage("Order placed! You will receive an email confirmation.");
+    }
+
+    if (query.get("canceled")) {
+      setMessage(
+        "Order canceled -- continue to shop around and checkout when you're ready."
+      );
+    }
   }, []);
 
   return (
-    <div className="App">
-      <Elements stripe={stripePromise}>
-        <CheckoutForm />
-      </Elements>
-    </div>
+    <>
+    {message ? <Message message={message} />
+      : 
+    <ProductDisplay />
+    }
+    </>
   );
 }

@@ -1,37 +1,26 @@
-const express = require("express");
 const dotenv = require('dotenv').config();
-const app = express();
 // This is your test secret API key.
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
-const PORT = process.env.PORT;
-const cors = require('cors');
+const express = require('express');
+const app = express();
 
-app.use(express.static("public"));
-app.use(express.json());
-app.use(cors());
+const YOUR_DOMAIN = 'http://localhost:3000';
 
-const calculateOrderAmount = (items) => {
-  // Replace this constant with a calculation of the order's amount
-  // Calculate the order total on the server to prevent
-  // people from directly manipulating the amount on the client
-  return 1400;
-};
-
-app.post("/create-payment-intent", async (req, res) => {
-  const { items } = req.body;
-  console.log('POST CAME IN');
-  // Create a PaymentIntent with the order amount and currency
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
-    currency: "cad",
-    automatic_payment_methods: {
-      enabled: true,
-    },
+app.post('/create-checkout-session', async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+        price: 'price_1LzBY8CljtP53TabKHvMzDKW',
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    success_url: `${YOUR_DOMAIN}?success=true`,
+    cancel_url: `${YOUR_DOMAIN}?canceled=true`,
   });
 
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
+  res.redirect(303, session.url);
 });
 
-app.listen(PORT, () => console.log(`Node server listening on port ${PORT}!`));
+app.listen(4242, () => console.log('Running on port 4242'));
